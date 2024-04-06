@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Text, View, TouchableOpacity } from "react-native";
+import { Text, View, TouchableOpacity,Button } from "react-native";
 import axios from "axios";
 import { api, endpoints } from "../../../config/server";
-import { Audio } from 'expo-av';
+import { Video,Audio,ResizeMode } from 'expo-av';
 import { ArrowLeft, Award } from "iconsax-react-native";
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,23 +17,18 @@ export default function ResultsScreen({ navigation, route }) {
     const [sound, setSound] = useState(null);
     async function playSound(uri) {
         console.log('Loading Sound');
-        const { sound } = await Audio.Sound.createAsync({ uri });
-        setSound(sound);
-        
-        console.log('Playing Sound');
-        try{
-          
+        try {
+            const { sound } = await Audio.Sound.createAsync({ uri });
+            setSound(sound);
+            
+            console.log('Playing Sound');
             await sound.playAsync();
+        } catch (error) {
+            console.log('Error playing sound:', error);
         }
-        catch(e){
-            console.log('Error playing sound:', e);
-        }
- 
- 
-
-      }
+    }
+    
       const appendToMyArr = async (value) => {
-        // Get the current value of myArr
         
         let currentArr = [];
         try {
@@ -59,14 +54,18 @@ export default function ResultsScreen({ navigation, route }) {
       
 
     }
-    useEffect(() => {
+
+     useEffect(() => {
         return sound
-          ? () => {
-              console.log('Unloading Sound');
-              sound.unloadAsync();
+
+            ? () => {
+                console.log('Unloading Sound');
+                sound.unloadAsync();
             }
-          : undefined;
-      }, [sound]);
+            : undefined;
+    }, [sound]);
+
+ 
     
     useEffect(() => {
         async function fetchData() {
@@ -93,11 +92,12 @@ export default function ResultsScreen({ navigation, route }) {
                 console.log(error);
             }
         }
-
+        //data == null && playSound("https://res.cloudinary.com/dqclsnpy9/video/upload/v1711290785/oggusgyoptpviqk9cyju.mp3");
+        playSound("https://res.cloudinary.com/dqclsnpy9/video/upload/v1711290785/oggusgyoptpviqk9cyju.mp3");
         url && fetchData();
-        data == null && playSound("https://res.cloudinary.com/dqclsnpy9/video/upload/v1711290785/oggusgyoptpviqk9cyju.mp3");
     }, []);
- 
+    const video = React.useRef(null);
+    const [status, setStatus] = React.useState({});
     return (
         <View
         style={{
@@ -134,7 +134,7 @@ export default function ResultsScreen({ navigation, route }) {
                 </TouchableOpacity>
             </View>
             {
-                data &&
+                data ?
        
             <View>
                 <View
@@ -192,6 +192,7 @@ export default function ResultsScreen({ navigation, route }) {
                     color:'#333',
                     marginTop:10,
                     marginBottom:20,
+                    fontWeight:'300'
                 }}
                 >
                     {data.message.why}
@@ -250,7 +251,22 @@ style={{
     }
 </View>
             </View>
+            :
+            <View
+            style={{
+                flex:1,
+                justifyContent:'center',
+                alignItems:'center',
+            
+            }}
+            >
+
+            <Text>
+                Loading...
+            </Text>
+            </View>
                  }
+             
     
          
         </View>

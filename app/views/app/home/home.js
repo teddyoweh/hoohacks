@@ -3,6 +3,8 @@ import plant from '../../../assets/plant.png';
 import map from '../../../assets/map.jpeg';
 import { BlurView } from 'expo-blur';
 import MapView from 'react-native-maps';
+import { Audio } from 'expo-av';
+
 import { Entypo,MaterialCommunityIcons } from '@expo/vector-icons';
 import { Bubble, Category } from 'iconsax-react-native';
 import { useEffect, useState } from 'react';
@@ -192,6 +194,21 @@ export default function HomeScreen({navigation}) {
     fetchData();
   },[]
   )
+  const [sound, setSound] = useState(null);
+  async function playSound(uri) {
+      console.log('Loading Sound');
+      try {
+          const { sound } = await Audio.Sound.createAsync({ uri });
+          // setSound(sound);
+          sound.unloadAsync();
+          
+          // console.log('Playing Sound');
+          // await sound.playAsync();
+      } catch (error) {
+          console.log('Error playing sound:', error);
+      }
+  }
+ 
   return (
     <View
     style={{

@@ -1,46 +1,32 @@
 import { BlurView } from 'expo-blur';
 import { Camera, CameraType } from 'expo-camera';
 import { useState } from 'react';
-import { Button, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { ImagePicker } from 'expo-image-picker'; // Import ImagePicker from Expo
+import { Button, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import * as Haptics from 'expo-haptics';
 import { api, endpoints } from '../../../config/server';
-export default function ScanScreen({navigation}) {
-  const [type, setType] = useState(CameraType.back);
-  const [permission, requestPermission] = Camera.useCameraPermissions();
-  const [camera, setCamera] = useState(null);
-    const [loading, setLoading] = useState(false);
-  if (!permission) {
-   
-    return <View />;
-  }
 
-  if (!permission.granted) {
- 
-    return (
-      <View style={styles.container}>
-        <Text style={{ textAlign: 'center' }}>We need your permission to show the camera</Text>
-        <Button onPress={requestPermission} title="grant permission" />
-      </View>
-    );
-  }
+export default function ScanScreen({ navigation }) {
+  const [loading, setLoading] = useState(false);
 
-  function toggleCameraType() {
-    setType(current => (current === CameraType.back ? CameraType.front : CameraType.back));
-  }
-  const takePicture = async () => {
-    if (!camera) return;
-
+  const pickImage = async () => {
     try {
-      const photo = await camera.takePictureAsync();
-      setLoading(true);
-      console.log('Photo taken: ', photo);
-        await uploadToCloudinary(photo.uri);
-   
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+
+      if (!result.cancelled) {
+        setLoading(true);
+ 
+        await uploadToCloudinary(result.assets[0].uri);
+      }
     } catch (error) {
-      console.error('Failed to take picture: ', error);
-      Alert.alert('Error', 'Failed to take picture. Please try again.');
+      console.error('Failed to pick an image: ', error);
+      Alert.alert('Error', 'Failed to pick an image. Please try again.');
     }
   };
 
@@ -54,66 +40,41 @@ export default function ScanScreen({navigation}) {
         'https://api.cloudinary.com/v1_1/dqclsnpy9/image/upload',
         formData
       );
-      setLoading(true);
-         navigation.navigate('ResultsScreen',{
-            url:cloudinaryResponse.data.url
-            
-        });
-      // Handle success
+      setLoading(false);
+      navigation.navigate('ResultsScreen', {
+        url: cloudinaryResponse.data.url
+      });
     } catch (error) {
       console.error('Failed to upload image to Cloudinary: ', error);
-      // Handle error
+      setLoading(false);
+      Alert.alert('Error', 'Failed to upload image to Cloudinary. Please try again.');
     }
   };
+
   return (
     <View style={styles.container}>
-      <Camera style={styles.camera} type={type}
-      
-      ref={(ref) => setCamera(ref)}
+      <View style={styles.imageContainer}>
+        <TouchableOpacity
+          style={styles.imageButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            pickImage();
+          }}>
+          <Text style={styles.buttonText}>{loading ? 'Loading...' : 'Choose Image'}</Text>
+        </TouchableOpacity>
+      </View>
 
-      focusDepth={1}
-      focusable={true}
- 
-      
-      >
-       
-      </Camera>
       <BlurView
         tint="light"
         intensity={50}
-      style={{
-        backgroundColor:'transparent',
-        height:'12%',
-        flexDirection:'row',
-        alignItems:'center',
-        justifyContent:'center',
- 
-      }}
-      >
+        style={styles.blurContainer}>
         <TouchableOpacity
-        style={{
-            width:'80%',
-        backgroundColor:loading==true?'#a4d6c4':"#14c986",
-        borderRadius:30,
-        paddingVertical:15,
-        }}
-        onPress={()=>{
+          style={styles.scanButton}
+          onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            takePicture();
-        
-        }}>
-    
-            <Text style={{
-                textAlign:'center',
-                fontSize:20,
-                fontWeight:'400',
-                color:'#fff',
-        
-
-                
-            }}>
-                {loading==true?'Loading...':'Scan'}
-            </Text>
+            // Call your scan function here
+          }}>
+          <Text style={styles.buttonText}>Scan</Text>
         </TouchableOpacity>
       </BlurView>
     </View>
@@ -124,26 +85,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    flexDirection: 'column',
-  },
-  camera: {
-    flex: 1,
-    height:'60%'
-  },
-  buttonContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: 'transparent',
-    margin: 64,
-  },
-  button: {
-    flex: 1,
-    alignSelf: 'flex-end',
     alignItems: 'center',
   },
-  text: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+  imageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  imageButton: {
+    backgroundColor: '#14c986',
+    borderRadius: 30,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+  },
+  blurContainer: {
+    height: '12%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanButton: {
+    width: '80%',
+    backgroundColor: '#14c986',
+    borderRadius: 30,
+    paddingVertical: 15,
+  },
+  buttonText: {
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '400',
+    color: '#fff',
   },
 });
